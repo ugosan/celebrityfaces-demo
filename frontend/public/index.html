@@ -32,6 +32,9 @@
 
     <!-- Infobox -->
     <div id="infobox">
+        <button id="infobox-expand-btn" class="infobox-expand-btn" aria-label="Open similarity badge">
+            <i class="fas fa-expand"></i>
+        </button>
         <div id="infobox-content">
             <h3>Vectorfaces Demo</h3>
             <p>Initializing...</p>
@@ -101,6 +104,31 @@
                     </div>
                 </div>
             </section>
+        </div>
+    </div>
+
+    <!-- Badge Modal -->
+    <div id="badge-modal" class="badge-modal" aria-hidden="true">
+        <div id="badge-modal-backdrop" class="badge-modal-backdrop"></div>
+        <div class="badge-modal-card" role="dialog" aria-modal="true" aria-labelledby="badge-modal-title">
+            
+            <div class="badge-glow-ring"></div>
+            <div class="badge-modal-content">
+                <p id="badge-modal-title" class="badge-modal-title">CelebrityFaces Match Badge</p>
+                <div id="badge-message-title" class="badge-message-title">CONGRATULATIONS</div>
+                <div id="badge-message" class="badge-message">You are <span class="badge-percent">0.0%</span> similar to <span class="badge-name">Unknown</span>!</div>
+                <div class="badge-images-row">
+                    <div class="badge-image-card">
+                        
+                        <img id="badge-captured-image" alt="Captured face preview" />
+                    </div>
+                    <div class="badge-image-card">
+                        
+                        <img id="badge-match-image" alt="Matched celebrity face preview" />
+                    </div>
+                </div>
+                <div id="badge-disclaimer" class="badge-disclaimer-row">As searched with Elasticsearch using vector search on x vectors in y milliseconds.</div>
+            </div>
         </div>
     </div>
 

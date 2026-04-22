@@ -3,6 +3,118 @@ export class GridController {
         this.currentTileIndex = 0;
         this.allFaces = []; // Store all faces for sorting
         this.maxFaces = 0; // Maximum number of faces (cols * rows)
+        this.currentTopFace = null;
+        this.currentCapturedFaceSrc = null;
+        this.currentMatchImageSrc = null;
+
+        this.expandButton = null;
+        this.badgeModal = null;
+        this.badgeBackdrop = null;
+        this.badgeCloseButton = null;
+        this.badgeMessage = null;
+        this.badgeCapturedImage = null;
+        this.badgeMatchImage = null;
+        this.badgeDisclaimer = null;
+
+        this.currentVectorCount = null;
+        this.currentSearchMs = null;
+
+        this.initializeBadgeModal();
+    }
+
+    initializeBadgeModal() {
+        this.expandButton = document.getElementById('infobox-expand-btn');
+        this.badgeModal = document.getElementById('badge-modal');
+        this.badgeBackdrop = document.getElementById('badge-modal-backdrop');
+        this.badgeCloseButton = document.getElementById('badge-modal-close');
+        this.badgeMessage = document.getElementById('badge-message');
+        this.badgeCapturedImage = document.getElementById('badge-captured-image');
+        this.badgeMatchImage = document.getElementById('badge-match-image');
+        this.badgeDisclaimer = document.getElementById('badge-disclaimer');
+
+        if (this.expandButton) {
+            this.expandButton.disabled = true;
+            this.expandButton.addEventListener('click', () => this.openBadgeModal());
+        }
+
+        if (this.badgeBackdrop) {
+            this.badgeBackdrop.addEventListener('click', () => this.closeBadgeModal());
+        }
+
+        if (this.badgeCloseButton) {
+            this.badgeCloseButton.addEventListener('click', () => this.closeBadgeModal());
+        }
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape' && this.badgeModal?.classList.contains('is-open')) {
+                this.closeBadgeModal();
+            }
+        });
+    }
+
+    openBadgeModal() {
+        if (!this.badgeModal || !this.currentTopFace || !this.badgeMessage) {
+            return;
+        }
+
+        const similarity = Math.max(0, Math.min(100, (this.currentTopFace.score || 0) * 100));
+        const celebrityName = this.currentTopFace?.metadata?.name || 'Unknown';
+
+        this.badgeMessage.innerHTML = `You are <span class="badge-percent">${similarity.toFixed(1)}%</span> similar to <span class="badge-name">${celebrityName}</span>!`;
+
+        this.refreshBadgeDisclaimer();
+
+        if (this.badgeCapturedImage) {
+            if (this.currentCapturedFaceSrc) {
+                this.badgeCapturedImage.src = this.currentCapturedFaceSrc;
+                this.badgeCapturedImage.style.display = 'block';
+            } else {
+                this.badgeCapturedImage.removeAttribute('src');
+                this.badgeCapturedImage.style.display = 'none';
+            }
+        }
+
+        if (this.badgeMatchImage) {
+            if (this.currentMatchImageSrc) {
+                this.badgeMatchImage.src = this.currentMatchImageSrc;
+                this.badgeMatchImage.style.display = 'block';
+            } else {
+                this.badgeMatchImage.removeAttribute('src');
+                this.badgeMatchImage.style.display = 'none';
+            }
+        }
+
+        this.badgeModal.classList.add('is-open');
+        this.badgeModal.setAttribute('aria-hidden', 'false');
+    }
+
+    closeBadgeModal() {
+        if (!this.badgeModal) {
+            return;
+        }
+
+        this.badgeModal.classList.remove('is-open');
+        this.badgeModal.setAttribute('aria-hidden', 'true');
+    }
+
+    setBadgeStats(vectorCount, searchMs) {
+        this.currentVectorCount = Number.isFinite(vectorCount) ? vectorCount : null;
+        this.currentSearchMs = Number.isFinite(searchMs) ? searchMs : null;
+        this.refreshBadgeDisclaimer();
+    }
+
+    refreshBadgeDisclaimer() {
+        if (!this.badgeDisclaimer) {
+            return;
+        }
+
+        const hasVectorCount = Number.isFinite(this.currentVectorCount);
+        const hasSearchMs = Number.isFinite(this.currentSearchMs);
+
+        const vectorText = hasVectorCount ? this.currentVectorCount.toLocaleString() : 'x';
+        const msText = hasSearchMs ? this.currentSearchMs.toFixed(1) : 'y';
+
+        this.badgeDisclaimer.textContent = `As searched with Elasticsearch using vector search on ${vectorText} vectors in ${msText} milliseconds.`;
     }
 
     generateGrid() {
@@ -213,14 +325,101 @@ export class GridController {
         this.currentTileIndex = sortedFaces.length % gridItems.length;
     }
 
-    updateInfoboxImage(topFace) {
+    getCapturedFaceCrop(faceAnalysis) {
+        const activeCanvas = window.controllers?.userMedia?.currentMediaSource?.getCanvas?.();
+        const bbox = faceAnalysis?.faces?.[0]?.bbox;
+
+        if (!activeCanvas || !bbox || bbox.length < 4) {
+            return null;
+        }
+
+        const [x1, y1, x2, y2] = bbox;
+        const minX = Math.min(x1, x2);
+        const minY = Math.min(y1, y2);
+        const faceWidth = Math.abs(x2 - x1);
+        const faceHeight = Math.abs(y2 - y1);
+
+        const paddingX = Math.floor(faceWidth * 0.15);
+        const paddingY = Math.floor(faceHeight * 0.2);
+
+        const cropX = Math.max(0, Math.floor(minX - paddingX));
+        const cropY = Math.max(0, Math.floor(minY - paddingY));
+        const maxX = Math.min(activeCanvas.width, Math.ceil(minX + faceWidth + paddingX));
+        const maxY = Math.min(activeCanvas.height, Math.ceil(minY + faceHeight + paddingY));
+
+        const cropWidth = maxX - cropX;
+        const cropHeight = maxY - cropY;
+
+        if (cropWidth <= 1 || cropHeight <= 1) {
+            return null;
+        }
+
+        const cropCanvas = document.createElement('canvas');
+        cropCanvas.width = cropWidth;
+        cropCanvas.height = cropHeight;
+
+        const cropContext = cropCanvas.getContext('2d');
+        if (!cropContext) {
+            return null;
+        }
+
+        cropContext.drawImage(
+            activeCanvas,
+            cropX,
+            cropY,
+            cropWidth,
+            cropHeight,
+            0,
+            0,
+            cropWidth,
+            cropHeight
+        );
+
+        return cropCanvas.toDataURL('image/jpeg', 0.85);
+    }
+
+    createInfoboxImageSlot(imgSrc, altText) {
+        const slot = document.createElement('div');
+        slot.style.display = 'flex';
+        slot.style.flexDirection = 'column';
+        slot.style.gap = '4px';
+        slot.style.flex = '1 1 0';
+        slot.style.minWidth = '0';
+
+        const imgWrapper = document.createElement('div');
+        imgWrapper.style.borderRadius = '6px';
+        imgWrapper.style.overflow = 'hidden';
+        imgWrapper.style.backgroundColor = 'rgba(0, 0, 0, 0.2)';
+        imgWrapper.style.width = '100%';
+        imgWrapper.style.aspectRatio = '1 / 1';
+
+        const img = document.createElement('img');
+        img.src = imgSrc;
+        img.alt = altText;
+        img.style.width = '100%';
+        img.style.height = '100%';
+        img.style.objectFit = 'cover';
+
+        imgWrapper.appendChild(img);
+        slot.appendChild(imgWrapper);
+
+        return slot;
+    }
+
+    updateInfoboxImage(topFace, faceAnalysis = null) {
         const infoboxImage = document.getElementById('infobox-image');
         if (!infoboxImage) return;
         
         // Clear existing content
         infoboxImage.innerHTML = '';
+        this.currentTopFace = null;
+        this.currentCapturedFaceSrc = null;
+        this.currentMatchImageSrc = null;
         
         if (!topFace || !topFace.metadata || !topFace.metadata.image_path) {
+            if (this.expandButton) {
+                this.expandButton.disabled = true;
+            }
             return;
         }
         
@@ -231,12 +430,38 @@ export class GridController {
         } else {
             imageSource = `/faces/${topFace.metadata.image_path}`;
         }
+
+        this.currentTopFace = topFace;
+        this.currentMatchImageSrc = imageSource;
+        if (this.expandButton) {
+            this.expandButton.disabled = false;
+        }
         
-        // Create and append image element
-        const img = document.createElement('img');
-        img.src = imageSource;
-        img.alt = topFace.metadata.name || 'Face match';
-        infoboxImage.appendChild(img);
+        infoboxImage.style.width = '300px';
+        infoboxImage.style.height = '140px';
+        infoboxImage.style.display = 'flex';
+        infoboxImage.style.alignItems = 'stretch';
+        infoboxImage.style.justifyContent = 'stretch';
+
+        const container = document.createElement('div');
+        container.style.display = 'flex';
+        container.style.gap = '8px';
+        container.style.width = '100%';
+
+        const capturedFaceSrc = this.getCapturedFaceCrop(faceAnalysis);
+        if (capturedFaceSrc) {
+            this.currentCapturedFaceSrc = capturedFaceSrc;
+            container.appendChild(this.createInfoboxImageSlot(capturedFaceSrc, 'Captured face'));
+        }
+
+        container.appendChild(
+            this.createInfoboxImageSlot(
+                imageSource,
+                topFace.metadata.name || 'Face match'
+            )
+        );
+
+        infoboxImage.appendChild(container);
     }
 
     clearGrid() {
@@ -271,5 +496,16 @@ export class GridController {
         if (infoboxImage) {
             infoboxImage.innerHTML = '';
         }
+
+        this.currentTopFace = null;
+        this.currentCapturedFaceSrc = null;
+        this.currentMatchImageSrc = null;
+        this.currentVectorCount = null;
+        this.currentSearchMs = null;
+        if (this.expandButton) {
+            this.expandButton.disabled = true;
+        }
+        this.refreshBadgeDisclaimer();
+        this.closeBadgeModal();
     }
 }

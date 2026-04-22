@@ -88,7 +88,7 @@ class VectorFacesApp {
             
             this.userMediaController.setFaceResults(faceAnalysis);
             this.gridController.updateBackgroundTiles(matchingFaces);
-            this.gridController.updateInfoboxImage(matchingFaces[0]);
+            this.gridController.updateInfoboxImage(matchingFaces[0], faceAnalysis);
         });
 
         this.userMediaController.setPreviewUpdateCallback(async () => {
@@ -149,12 +149,36 @@ class VectorFacesApp {
         }
     }
 
+    getEnabledVectorCount() {
+        if (!this.backendStats || !this.backendStats.elasticsearch || !window.settings?.indices) {
+            return 0;
+        }
+
+        const elasticsearchStats = this.backendStats.elasticsearch;
+        const enabledIndices = window.settings.indices
+            .filter(idx => idx.selected)
+            .map(idx => idx.name);
+
+        let totalDocs = 0;
+        for (const [indexName, stats] of Object.entries(elasticsearchStats)) {
+            if (enabledIndices.includes(indexName) && stats._all && stats._all.primaries) {
+                const docs = stats._all.primaries.docs || {};
+                totalDocs += docs.count || 0;
+            }
+        }
+
+        return totalDocs;
+    }
+
     updateInfoBox(timingStats, faceAnalysis, matchingFaces) {
         const infoboxContent = document.getElementById('infobox-content');
         if (infoboxContent && timingStats && this.backendStats) {
             const faceTime = timingStats.face_analysis_ms || 0;
             const esTime = timingStats.elasticsearch_ms || timingStats.elasticsearch_total_ms || 0;
             const totalTime = timingStats.total_processing_ms || 0;
+            const total_docs = this.getEnabledVectorCount();
+
+            this.gridController.setBadgeStats(total_docs, esTime);
             
             // Find highest score
             let highestScore = 0;
@@ -184,22 +208,6 @@ class VectorFacesApp {
                 
                 
                 
-                let total_docs = 0;
-                const elasticsearchStats = this.backendStats.elasticsearch;
-                
-                // Get enabled index names from settings
-                const enabledIndices = window.settings.indices
-                    .filter(idx => idx.selected)
-                    .map(idx => idx.name);
-                
-                for (const [indexName, stats] of Object.entries(elasticsearchStats)) {
-                    // Only count docs on indices that are enabled in window.settings
-                    if (enabledIndices.includes(indexName) && stats._all && stats._all.primaries) {
-                        const docs = stats._all.primaries.docs || {};
-                        total_docs += docs.count || 0;
-                    }
-                }
-
                 html += `<p>Searched <strong> ${total_docs.toLocaleString()}</strong> vectors</p>`;
 
                 /*

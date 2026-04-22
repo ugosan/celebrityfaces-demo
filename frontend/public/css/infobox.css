@@ -3,7 +3,7 @@
     position: fixed;
     bottom: 20px;
     right: 20px;
-    width: 500px;
+    width: 550px;
     max-height: 400px;
     background-color: rgba(85, 85, 85, 0.5);
     border-radius: 8px;
@@ -16,6 +16,33 @@
     color:#FFFFFF;
     display: flex;
     gap: 16px;
+}
+
+.infobox-expand-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 34px;
+    height: 34px;
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    border-radius: 999px;
+    background: rgba(16, 28, 63, 0.65);
+    color: #ffffff;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.2s ease, background 0.2s ease, opacity 0.2s ease;
+}
+
+.infobox-expand-btn:hover {
+    transform: scale(1.06);
+    background: rgba(11, 100, 221, 0.9);
+}
+
+.infobox-expand-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
 }
 
 #infobox::-webkit-scrollbar {
@@ -85,4 +112,172 @@
 
 #infobox-content strong {
     color: #FFFFFF;
+}
+
+.badge-modal {
+    position: fixed;
+    inset: 0;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 3000;
+    padding: 20px;
+}
+
+.badge-modal.is-open {
+    display: flex;
+}
+
+.badge-modal-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(16, 28, 63, 0.75);
+    backdrop-filter: blur(6px);
+}
+
+.badge-modal-card {
+    position: relative;
+    width: min(680px, calc(100vw - 32px));
+    border-radius: 20px;
+    overflow: hidden;
+    background: linear-gradient(145deg, #153385 0%, #0B64DD 46%, #48EFCF 100%);
+    box-shadow: 0 28px 70px rgba(0, 0, 0, 0.5);
+    color: #ffffff;
+    animation: badgePopIn 0.28s ease-out;
+}
+
+.badge-glow-ring {
+    position: absolute;
+    width: 520px;
+    height: 520px;
+    border-radius: 50%;
+    top: -280px;
+    right: -200px;
+    background: radial-gradient(circle at center, rgba(254, 197, 20, 0.7) 0%, rgba(240, 78, 152, 0.3) 45%, rgba(240, 78, 152, 0) 70%);
+    pointer-events: none;
+}
+
+.badge-modal-content {
+    position: relative;
+    padding: 28px 28px 24px 28px;
+}
+
+.badge-modal-title {
+    margin: 0;
+    font-size: 13px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    opacity: 0.9;
+}
+
+.badge-message-title {
+    margin-top: 10px;
+    font-size: clamp(26px, 3.3vw, 42px);
+    line-height: 1.05;
+    font-weight: 900;
+    letter-spacing: 0.03em;
+    text-shadow: 0 3px 16px rgba(16, 28, 63, 0.35);
+}
+
+.badge-message {
+    margin-top: 8px;
+    font-size: clamp(18px, 2.4vw, 28px);
+    line-height: 1.22;
+    font-weight: 700;
+    text-shadow: 0 3px 16px rgba(16, 28, 63, 0.35);
+}
+
+.badge-percent {
+    color: #FEC514;
+}
+
+.badge-name {
+    color: #FFFFFF;
+    background: rgba(240, 78, 152, 0.28);
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    border-radius: 10px;
+    padding: 2px 8px;
+    display: inline-block;
+}
+
+.badge-images-row {
+    margin-top: 22px;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+    width: 80%;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.badge-image-card {
+    border-radius: 14px;
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.14);
+    border: 1px solid rgba(255, 255, 255, 0.25);
+}
+
+.badge-image-card p {
+    margin: 0 0 8px 0;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+}
+
+.badge-image-card img {
+    width: 80%;
+    aspect-ratio: 1 / 1;
+    border-radius: 10px;
+    object-fit: cover;
+    background: rgba(0, 0, 0, 0.24);
+    display: block;
+    margin: 0 auto;
+}
+
+.badge-disclaimer-row {
+    margin-top: 12px;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.4;
+    text-align: center;
+    opacity: 0.88;
+}
+
+.badge-modal-close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    width: 34px;
+    height: 34px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    background: rgba(16, 28, 63, 0.45);
+    color: #ffffff;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+@keyframes badgePopIn {
+    from {
+        transform: translateY(10px) scale(0.97);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+    }
+}
+
+@media (max-width: 680px) {
+    .badge-modal-content {
+        padding: 20px 18px 18px 18px;
+    }
+
+    .badge-images-row {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
 }
