@@ -117,7 +117,7 @@ export class MediaSource {
 
     getImageData() {
         if (!this.canvas) return null;
-        return this.canvas.toDataURL('image/jpeg', 0.75);
+        return this.canvas.toDataURL('image/jpeg', 0.9);
     }
 
     update() {
